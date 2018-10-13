@@ -39,10 +39,12 @@ describe('', function() {
     /* TODO: Update user and password if different than on your local machine            */
     /*************************************************************************************/
     db = mysql.createConnection({
-      user: 'student',
-      password: 'student',
+      user: 'root',
+      password: '',
       database: 'shortly'
     });
+
+    // mysql -u root
 
     /**************************************************************************************/
     /* TODO: If you create a new MySQL tables, add it to the tablenames collection below. */
@@ -445,14 +447,20 @@ describe('', function() {
 
           createSession(requestWithoutCookie, response, function() {
             var hash = requestWithoutCookie.session.hash;
+            console.log('hash in test: ',hash);
+            console.log('userId:',userId);
             db.query('UPDATE sessions SET userId = ? WHERE hash = ?', [userId, hash], function(error, result) {
 
               var secondResponse = httpMocks.createResponse();
               var requestWithCookies = httpMocks.createRequest();
               requestWithCookies.cookies.shortlyid = hash;
 
+             // console.log('requestWithCookies before:',requestWithCookies);
+
               createSession(requestWithCookies, secondResponse, function() {
                 var session = requestWithCookies.session;
+
+                console.log('res.sessions after:',session);
                 expect(session).to.be.an('object');
                 expect(session.user.username).to.eq(username);
                 expect(session.userId).to.eq(userId);

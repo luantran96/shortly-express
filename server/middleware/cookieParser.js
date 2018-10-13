@@ -2,6 +2,8 @@ const parseCookies = (req, res, next) => {
   
   var cookieObj = {};
   
+  console.log('req in parseCookies:',req);
+
   if (req.headers.cookie) {
 
     var cookies = req.headers.cookie.split('; ');
