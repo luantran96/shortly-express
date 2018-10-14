@@ -474,10 +474,12 @@ describe('', function() {
       it('clears and reassigns a new cookie if there is no session assigned to the cookie', function(done) {
         var maliciousCookieHash = '8a864482005bcc8b968f2b18f8f7ea490e577b20';
         var response = httpMocks.createResponse();
-        var requestWithMaliciousCookie = httpMocks.createRequest();
-        requestWithMaliciousCookie.cookies.shortlyid = maliciousCookieHash;
+        var requestWithMaliciousCookie = httpMocks.createRequest();  
+        requestWithMaliciousCookie.cookies.shortlyid = maliciousCookieHash; 
 
+        console.log('requestWithMaliciousCookie.cookies.shortlyid: ',requestWithMaliciousCookie);     
         createSession(requestWithMaliciousCookie, response, function() {
+          console.log('response after requestWithMaliciousCookie:',response); 
           var cookie = response.cookies.shortlyid;
           expect(cookie).to.exist;
           expect(cookie).to.not.equal(maliciousCookieHash);
@@ -487,7 +489,7 @@ describe('', function() {
     });
   });
 
-  xdescribe('Sessions and cookies', function() {
+  describe('Sessions and cookies', function() {
     var requestWithSession;
     var cookieJar;
 

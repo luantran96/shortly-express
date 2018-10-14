@@ -1,5 +1,6 @@
 const models = require('../models');
 const cookieParser = require('./cookieParser');
+const utils = require('./../lib/hashUtils');
 const Promise = require('bluebird');
 
 module.exports.createSession = (req, res, next) => {
@@ -52,27 +53,30 @@ module.exports.createSession = (req, res, next) => {
         models.Sessions.get({hash:req.cookies.shortlyid}).then ((result) =>{ 
         // Use cookie to find userId
         // Then use userId to find username
+          console.log('result:',result);
 
-          //console.log('result:',result);
+          if (result && result.userId !== null) { // If cookie is assigned to session
+
           req.session.hash = req.cookies.shortlyid;
           req.session.user = {};
           req.session.userId = result.userId; 
 
-              console.log('req.session:',req.session);
+          console.log('req.session:',req.session);
+            models.Users.get({id: result.userId}).then ( (result) => {
+              req.session.user.username = result.username;    
+              console.log('req.session.user:',req.session.user);
+              console.log('res.sessions after:',req.session);
+              next();
+            });
+          } else { // If cookie is not assigned to session
 
-              if (result.userId !== null) {
+            var data = utils.createRandom32String();
+            var newHash = utils.createHash(data);
 
-                models.Users.get({id: result.userId}).then ( (result) => {
-                  req.session.user.username = result.username;
-                  console.log('req.session.user:',req.session.user);
-                  console.log('res.sessions after:',req.session);
+            res.cookies.shortlyid = newHash;  
+            next();
+          }
 
-                  next();
-                });
-              } else {
-
-                next();
-              }
 
             });      
         });
@@ -96,9 +100,6 @@ module.exports.createSession = (req, res, next) => {
 
             });
 
-            
-
-          
       }
 
   }
