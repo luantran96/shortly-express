@@ -24,14 +24,12 @@ app.get('/',Auth.verifySession,
     res.render('index');
   });
 
-
-
-app.get('/create', 
+app.get('/create', Auth.verifySession,
   (req, res) => {
     res.render('index');
   });
 
-app.get('/links', 
+app.get('/links', Auth.verifySession,
   (req, res, next) => {
     models.Links.getAll()
       .then(links => {
@@ -110,6 +108,7 @@ app.post('/signup', (req, res) => {
 
 });
 
+
 app.get('/signup', (req, res) => {
   res.render('signup');
 });
@@ -156,7 +155,7 @@ app.get('/logout', (req,res) => {
   
   const {cookies} = req;
   
-  
+
   models.Sessions.delete({hash: cookies.shortlyid}).then (() => {
 
       res.clearCookie('shortlyid');
@@ -175,8 +174,10 @@ app.get('/logout', (req,res) => {
 
 app.get('/:code', (req, res, next) => {
 
+
   return models.Links.get({ code: req.params.code })
     .tap(link => {
+        console.log('req.params.code:',req.params.code);
 
       if (!link) {
         throw new Error('Link does not exist');
@@ -193,6 +194,7 @@ app.get('/:code', (req, res, next) => {
       res.status(500).send(error);
     })
     .catch(() => {
+      console.log('AM I HERE');
       res.redirect('/');
     });
 });
