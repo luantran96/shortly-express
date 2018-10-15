@@ -5,6 +5,7 @@ const partials = require('express-partials');
 const bodyParser = require('body-parser');
 const Auth = require('./middleware/auth');
 const models = require('./models');
+const CookieParser = require('./middleware/CookieParser');
 
 const app = express();
 
@@ -14,12 +15,13 @@ app.use(partials());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '../public')));
-//app.use(Auth.parseCookies());
-//app.use(Auth.createSession());
 
+app.use(CookieParser);
+app.use(Auth.createSession);
 
-app.get('/', 
+app.get('/',  
   (req, res) => {
+
     res.render('index');
   });
 
@@ -83,12 +85,23 @@ app.post('/signup', (req, res) => {
 
   const {username, password} = req.body;
 
+  console.log('\n\n');
+  console.log('username:',username);
+  console.log('\n\n');
+  console.log('session hash for username:',req.session);
+
   models.Users.get({username}).then( (result) => {
 
     if (!result) {
-
       models.Users.create(req.body).then ((result) => {
-        res.redirect('/');
+
+        //console.log('result from creating a user: ', result);
+
+        models.Sessions.update({id: result.insertId}, {userId: result.insertId}).then( () =>{
+
+          res.redirect('/');
+        });
+    
       });
     } else {
       res.redirect('/signup');
@@ -97,23 +110,23 @@ app.post('/signup', (req, res) => {
 
 });
 
+app.get('/signup', (req, res) => {
+  res.render('signup');
+});
 
 app.post('/login', (req, res) => {
 
   const {username, password} = req.body;
+  models.Users.get({username}).then ( (user) => {
 
-  models.Users.get({username}).then ( (result) => {
+    if (user) {
 
-    if (result) {
-
-      var hashedPassword = result.password;
-      var salt = result.salt;
+      var hashedPassword = user.password;
+      var salt = user.salt;
 
       if (models.Users.compare(password, hashedPassword, salt)) {
-
         console.log('Log in successful !!');
-        res.redirect('/');  
-    
+        res.redirect('/');     
       } else {
         res.redirect('/login');
       }
@@ -128,6 +141,32 @@ app.post('/login', (req, res) => {
 
 });
 
+app.get('/login', (req, res) => {
+  res.render('login');
+});
+
+
+app.get('/logout', (req,res) => {
+
+  // Delete current session
+  // create a new session with no userId
+
+  console.log('HELLO FROM LOGOUT!');
+  console.log('req from /logout:',req);
+  console.log('req.cookies from /logout:',req.cookies);
+  
+
+  const {cookies} = req;
+
+  //console.log('cookies.shortlyid:',cookies.shortlyid);
+  models.Sessions.delete({hash: cookies.shortlyid}).then (() => {
+
+      res.clearCookie('shortlyid');
+      console.log('Redirecting to login page...');
+      res.redirect('/login');
+  }); 
+
+});
 
 
 /************************************************************/

@@ -3,37 +3,39 @@ const cookieParser = require('./cookieParser');
 const utils = require('./../lib/hashUtils');
 const Promise = require('bluebird');
 
-module.exports.createSession = (req, res, next) => {
+module.exports.createSession = (req, res, next) => {  // Only passed in parsed requests
 
-  console.log('requestWithCookies in createSession:', req.cookies.shortlyid);
-  
-  if (Object.keys(req.cookies).length === 0) {  // If there is no cookie
+  var incomingCookies = req.cookies;
+  console.log('incomingCookies:',incomingCookies);
 
-    // If cookies exist, then use that cookie to find userId
-    // model.Users.get({hash:req.cookies}).then ((result) =>{});       
+  if (Object.keys(incomingCookies).length === 0) {  // If there is no cookie
 
-    // If no cookie and no session
-    if(req.session === undefined) {
+    console.log('Cookies dont exist');
+    if(req.session === undefined) {    // If no cookie and no session
       console.log('req.session doesnt exists ');
       models.Sessions.create().then( (result) => {
         models.Sessions.get({id:result.insertId}).then((result) => {
           req.session = {};
           req.session.hash = result.hash;
-          res.cookies = {};
-          res.cookies['shortlyid'] = {};
-          res.cookies['shortlyid'].value = req.session.hash;
+          console.log('new session hash:',req.session.hash);
+          req.session.user = {};
+          
+          console.log('req.body in createSession:',req.body);
+
+          res.cookie('shortlyid',req.session.hash);
           next();
+
+        
         }); 
       });
 
     } else { // If no cookie and session exists
-
+      console.log('req.session exists ');
       models.Sessions.get({id:result.insertId}).then((result) => {
-        req.session = {};
+        //req.session = {};
         req.session.hash = result.hash;
-        res.cookies = {};
-        res.cookies['shortlyid'] = {};
-        res.cookies['shortlyid'].value = req.session.hash;
+        res.cookie('shortlyid',req.session.hash);
+
         next();
 
       }); 
@@ -41,81 +43,53 @@ module.exports.createSession = (req, res, next) => {
 
   } else { // If cookies exist
     console.log('Cookies exist');
+    req.session = {};
+    req.session.hash = incomingCookies.shortlyid;
 
-    if (req.session === undefined) { // and no session
+      models.Sessions.get({hash:incomingCookies.shortlyid}).then ((result) =>{ 
 
-      console.log('session doesnt exist');
+        if (result && result.userId !== null) { // If cookie is assigned to session
+        console.log('Cookie is assigned to a session');
+        req.session.hash = incomingCookies. shortlyid.value;
+        req.session.user = {};
+        req.session.userId = result.userId; 
 
-        models.Sessions.create().then( (result) => {
-        req.session = {};
-        req.session.hash = req.cookies.shortlyid;
-
-        models.Sessions.get({hash:req.cookies.shortlyid}).then ((result) =>{ 
-        // Use cookie to find userId
-        // Then use userId to find username
-          console.log('result:',result);
-
-          if (result && result.userId !== null) { // If cookie is assigned to session
-
-          req.session.hash = req.cookies.shortlyid;
-          req.session.user = {};
-          req.session.userId = result.userId; 
-
-          console.log('req.session:',req.session);
-            models.Users.get({id: result.userId}).then ( (result) => {
-              req.session.user.username = result.username;    
-              console.log('req.session.user:',req.session.user);
-              console.log('res.sessions after:',req.session);
-              next();
-            });
-          } else { // If cookie is not assigned to session
-
-            var data = utils.createRandom32String();
-            var newHash = utils.createHash(data);
-
-            res.cookies.shortlyid = newHash;  
+          models.Users.get({id: result.userId}).then ( (result) => {
+            req.session.user.username = result.username;    
             next();
-          }
+          });
+        } else { // If cookie is not assigned to session
+          console.log('Cookie is not assigned to a session');
+          models.Sessions.create().then( (result) => {
+            models.Sessions.get({id:result.insertId}).then((result) => {
+              req.session = {};
+              req.session.hash = result.hash;
+              res.cookie('shortlyid',req.session.hash);
 
+              next();
+            }); 
+          });
 
-            });      
-        });
-      } else {  // and session exists
+         // next();
+        }
 
-        console.log('session does exist');
+      });
 
-            models.Sessions.get({hash:req.cookies.shortlyid}).then ((result) =>{ 
-              // Use cookie to find userId
-                // Then use userId to find username
+    }
 
-              req.session.hash = req.cookies.shortlyid;
-              req.session.user = {};
-              req.session.user.userId = result.userId; 
+  
 
-              models.Users.get({id: result.userId}).then ( (result) => {
-                req.session.user.username = result.username;
-                console.log('req.session.user:',req.session.user);
-                 next();
-              });
-
-            });
-
-      }
-
-  }
-
-
-
-
-    // Get userId from session
-      
-    // Use the userId from session to find username in Users db
-    // Once we have username and userId, set them as properties to session
-    //models.Users.get({})
- 
 };
 
 /************************************************************/
 // Add additional authentication middleware functions below
 /************************************************************/
+
+module.exports.verifySession = (req, res, next) => {
+  if (!models.Sessions.isLoggedIn(req.session)) {
+    res.redirect('/login');
+  } else {
+    next();
+  }
+};
 

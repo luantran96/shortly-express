@@ -348,6 +348,7 @@ describe('', function() {
 
         var response = httpMocks.createResponse();
 
+        console.log('requestWithMultipleCookies:',requestWithMultipleCookies);
         cookieParser(requestWithoutCookies, response, function() {
           var cookies = requestWithoutCookies.cookies;
           expect(cookies).to.be.an('object');
@@ -445,7 +446,10 @@ describe('', function() {
           if (error) { return done(error); }
           var userId = results.insertId;
 
+          console.log('requestWithoutCookies before:',requestWithoutCookie);
           createSession(requestWithoutCookie, response, function() {
+            console.log('\n\n\n');
+            console.log('requestWithoutCookies after:',requestWithoutCookie);
             var hash = requestWithoutCookie.session.hash;
             console.log('hash in test: ',hash);
             console.log('userId:',userId);
@@ -455,12 +459,14 @@ describe('', function() {
               var requestWithCookies = httpMocks.createRequest();
               requestWithCookies.cookies.shortlyid = hash;
 
-             // console.log('requestWithCookies before:',requestWithCookies);
+              console.log('requestWithCookies before:',requestWithCookies);
+              console.log('\n');
 
               createSession(requestWithCookies, secondResponse, function() {
+                console.log('\n\n');
+                console.log('requestWithCookies after:',requestWithCookies);
                 var session = requestWithCookies.session;
 
-                console.log('res.sessions after:',session);
                 expect(session).to.be.an('object');
                 expect(session.user.username).to.eq(username);
                 expect(session.userId).to.eq(userId);
@@ -497,24 +503,25 @@ describe('', function() {
 
       var options = {
         'method': 'POST',
-        'uri': 'http://127.0.0.1:4568/signup',
+        'uri': 'http://127.0.0.1:4568/signup',  
         'json': {
           'username': 'Vivian',
           'password': 'Vivian'
-        }
+        } 
       };
 
       requestWithSession(options, callback);
     };
 
     beforeEach(function(done) {
-      cookieJar = request.jar();
+      cookieJar = request.jar(); 
       requestWithSession = request.defaults({ jar: cookieJar });
-      done();
+      done(); 
     });
 
     it('saves a new session when the server receives a request', function(done) {
-      requestWithSession('http://127.0.0.1:4568/', function(err, res, body) {
+        requestWithSession('http://127.0.0.1:4568/', function(err, res, body) {
+        console.log('\n\n');
         if (err) { return done(err); }
         var queryString = 'SELECT * FROM sessions';
         db.query(queryString, function(error, sessions) {
@@ -546,6 +553,7 @@ describe('', function() {
           WHERE sessions.hash = ? AND users.id = sessions.userId
         `;
 
+        console.log('hash is:',cookieValue);
         db.query(queryString, cookieValue, function(error, users) {
           if (error) { return done(error); }
           var user = users[0];
@@ -559,13 +567,18 @@ describe('', function() {
       addUser(function(err, res, body) {
         if (err) { return done(err); }
         var cookies = cookieJar.getCookies('http://127.0.0.1:4568/');
+        console.log('current cookies in browser:',cookies);
         var cookieValue = cookies[0].value;
+
+        console.log('cookieValue:',cookieValue);
 
         requestWithSession('http://127.0.0.1:4568/logout', function(error, response, resBody) {
           if (error) { return done(error); }
 
           var cookies = cookieJar.getCookies('http://127.0.0.1:4568/');
+          console.log('current cookies in browser:',cookies);
           var newCookieValue = cookies[0].value;
+          console.log('newCookieValue:',cookieValue);
           expect(cookieValue).to.not.equal(newCookieValue);
 
           var queryString = 'SELECT * FROM sessions WHERE hash = ?';
@@ -579,7 +592,7 @@ describe('', function() {
     });
   });
 
-  xdescribe('Privileged Access:', function() {
+  describe('Privileged Access:', function() {
 
     it('Redirects to login page if a user tries to access the main page and is not signed in', function(done) {
       request('http://127.0.0.1:4568/', function(error, res, body) {
