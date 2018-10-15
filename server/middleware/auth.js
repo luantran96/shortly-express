@@ -6,6 +6,7 @@ const Promise = require('bluebird');
 module.exports.createSession = (req, res, next) => {  // Only passed in parsed requests
 
   var incomingCookies = req.cookies;
+  console.log('\n\n');
   console.log('incomingCookies:',incomingCookies);
 
   if (Object.keys(incomingCookies).length === 0) {  // If there is no cookie
@@ -14,18 +15,14 @@ module.exports.createSession = (req, res, next) => {  // Only passed in parsed r
     if(req.session === undefined) {    // If no cookie and no session
       console.log('req.session doesnt exists ');
       models.Sessions.create().then( (result) => {
-        models.Sessions.get({id:result.insertId}).then((result) => {
+        models.Sessions.get({id:result.insertId}).then((newSession) => {
+
           req.session = {};
-          req.session.hash = result.hash;
+          req.session.hash = newSession.hash;
           console.log('new session hash:',req.session.hash);
           req.session.user = {};
-          
-          console.log('req.body in createSession:',req.body);
-
           res.cookie('shortlyid',req.session.hash);
           next();
-
-        
         }); 
       });
 
@@ -60,9 +57,10 @@ module.exports.createSession = (req, res, next) => {  // Only passed in parsed r
           });
         } else { // If cookie is not assigned to session
           console.log('Cookie is not assigned to a session');
+
           models.Sessions.create().then( (result) => {
             models.Sessions.get({id:result.insertId}).then((result) => {
-              req.session = {};
+              //req.session = {};
               req.session.hash = result.hash;
               res.cookie('shortlyid',req.session.hash);
 
@@ -86,10 +84,27 @@ module.exports.createSession = (req, res, next) => {  // Only passed in parsed r
 /************************************************************/
 
 module.exports.verifySession = (req, res, next) => {
-  if (!models.Sessions.isLoggedIn(req.session)) {
-    res.redirect('/login');
-  } else {
-    next();
-  }
+
+    console.log('req.session in verifySession:',req.session);
+
+    var currentSessionHash = req.session.hash;
+
+  models.Sessions.get({hash:currentSessionHash}).then ( (session) => {
+
+    if (session.userId === null) {
+      res.redirect('/login');
+    } else {
+      next();
+    }
+  });
+
+  // if (Object.keys(req.session.user).length === 0) { // No 
+  //   console.log('User is not logged in');
+  //   console.log('\n\n');
+  //   res.redirect('/login');
+  // } else {
+  //   console.log('User is logged in');
+  //   next();
+  // }
 };
 

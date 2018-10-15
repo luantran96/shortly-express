@@ -19,11 +19,12 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.use(CookieParser);
 app.use(Auth.createSession);
 
-app.get('/',  
+app.get('/',Auth.verifySession,  
   (req, res) => {
-
     res.render('index');
   });
+
+
 
 app.get('/create', 
   (req, res) => {
@@ -95,7 +96,6 @@ app.post('/signup', (req, res) => {
     if (!result) {
       models.Users.create(req.body).then ((result) => {
 
-        //console.log('result from creating a user: ', result);
 
         models.Sessions.update({id: result.insertId}, {userId: result.insertId}).then( () =>{
 

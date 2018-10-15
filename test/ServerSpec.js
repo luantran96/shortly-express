@@ -567,18 +567,18 @@ describe('', function() {
       addUser(function(err, res, body) {
         if (err) { return done(err); }
         var cookies = cookieJar.getCookies('http://127.0.0.1:4568/');
-        console.log('current cookies in browser:',cookies);
+        //console.log('current cookies in browser:',cookies);
         var cookieValue = cookies[0].value;
 
-        console.log('cookieValue:',cookieValue);
+        //console.log('cookieValue:',cookieValue);
 
         requestWithSession('http://127.0.0.1:4568/logout', function(error, response, resBody) {
           if (error) { return done(error); }
 
           var cookies = cookieJar.getCookies('http://127.0.0.1:4568/');
-          console.log('current cookies in browser:',cookies);
+          //console.log('current cookies in browser:',cookies);
           var newCookieValue = cookies[0].value;
-          console.log('newCookieValue:',cookieValue);
+          //console.log('newCookieValue:',cookieValue);
           expect(cookieValue).to.not.equal(newCookieValue);
 
           var queryString = 'SELECT * FROM sessions WHERE hash = ?';
@@ -597,6 +597,7 @@ describe('', function() {
     it('Redirects to login page if a user tries to access the main page and is not signed in', function(done) {
       request('http://127.0.0.1:4568/', function(error, res, body) {
         if (error) { return done(error); }
+        //console.log('res is :',res);
         expect(res.req.path).to.equal('/login');
         done();
       });
