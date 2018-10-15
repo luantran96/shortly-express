@@ -152,13 +152,11 @@ app.get('/logout', (req,res) => {
   // create a new session with no userId
 
   console.log('HELLO FROM LOGOUT!');
-  console.log('req from /logout:',req);
-  console.log('req.cookies from /logout:',req.cookies);
+  //console.log('req from /logout:',req);
   
-
   const {cookies} = req;
-
-  //console.log('cookies.shortlyid:',cookies.shortlyid);
+  
+  
   models.Sessions.delete({hash: cookies.shortlyid}).then (() => {
 
       res.clearCookie('shortlyid');
